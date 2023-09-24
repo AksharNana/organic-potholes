@@ -165,7 +165,8 @@ public class MwmActivity extends BaseMwmFragmentActivity
   {
     NONE,
     EDITOR,
-    API
+    API,
+    POTHOLE
   }
   @NonNull
   private PointChooserMode mPointChooserMode = PointChooserMode.NONE;
@@ -538,6 +539,27 @@ public class MwmActivity extends BaseMwmFragmentActivity
                     .show();
             }
             break;
+            case POTHOLE:
+              if (Framework.nativeIsDownloadedMapAtScreenCenter()) {
+                final double[] point = Framework.nativeGetScreenRectCenter();
+                final String message = point[0] + " " + point[1] + " " + Framework.nativeGetDrawScale();
+                dismissAlertDialog();
+                mAlertDialog = new MaterialAlertDialogBuilder(this, R.style.MwmTheme_AlertDialog)
+                        .setTitle(message)
+                        .setPositiveButton(R.string.ok, null)
+                        .setOnDismissListener(dialog -> mAlertDialog = null)
+                        .show();
+                System.out.println("Pothole selection: " + message);
+              }else
+              {
+                dismissAlertDialog();
+                mAlertDialog = new MaterialAlertDialogBuilder(this, R.style.MwmTheme_AlertDialog)
+                        .setTitle(R.string.message_invalid_feature_position)
+                        .setPositiveButton(R.string.ok, null)
+                        .setOnDismissListener(dialog -> mAlertDialog = null)
+                        .show();
+              }
+              break;
           case NONE:
             throw new IllegalStateException("Unexpected mPositionChooserMode");
           }
@@ -2137,6 +2159,11 @@ public class MwmActivity extends BaseMwmFragmentActivity
     mPreviousLayerMode = mode;
   }
 
+  public void onAddPotholeOptionSelected(){
+    closeFloatingPanels();
+    showPositionChooser(PointChooserMode.POTHOLE,false,false);
+  }
+
   @Override
   @Nullable
   public ArrayList<MenuBottomSheetItem> getMenuBottomSheetItems(String id)
@@ -2145,6 +2172,7 @@ public class MwmActivity extends BaseMwmFragmentActivity
     {
       ArrayList<MenuBottomSheetItem> items = new ArrayList<>();
       items.add(new MenuBottomSheetItem(R.string.placepage_add_place_button, R.drawable.ic_plus, this::onAddPlaceOptionSelected));
+      items.add(new MenuBottomSheetItem(R.string.placepage_add_pothole_button, R.drawable.ic_plus, this::onAddPotholeOptionSelected));
       items.add(new MenuBottomSheetItem(
           R.string.download_maps,
           R.drawable.ic_download,

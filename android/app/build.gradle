@@ -24,7 +24,8 @@ buildscript {
   ext.googleMobileServicesEnabled = taskName.contains('google') || taskName.contains('huawei') || taskName.contains('web')
 
   // Enable Firebase for all beta flavors except fdroid only if google-services.json exists.
-  def googleFirebaseServicesDefault = isBeta && !isFdroid && file("$projectDir/google-services.json").exists()
+  //def googleFirebaseServicesDefault = isBeta && !isFdroid && file("$projectDir/google-services.json").exists()
+  def googleFirebaseServicesDefault = false
   // Add a parameter to force Firebase.
   ext.googleFirebaseServicesEnabled = project.hasProperty('firebase') ?: googleFirebaseServicesDefault
 
@@ -320,7 +321,7 @@ android {
         // Keep debug symbols for test lab.
         ndk.debugSymbolLevel = 'symbol_table'
         firebaseCrashlytics {
-          nativeSymbolUploadEnabled true
+          nativeSymbolUploadEnabled false
         }
       }
     }
@@ -339,7 +340,7 @@ android {
 
       if (googleFirebaseServicesEnabled) {
         firebaseCrashlytics {
-          nativeSymbolUploadEnabled true
+          nativeSymbolUploadEnabled false
         }
       }
     }
@@ -361,7 +362,7 @@ android {
 
       if (googleFirebaseServicesEnabled) {
         firebaseCrashlytics {
-          nativeSymbolUploadEnabled true
+          nativeSymbolUploadEnabled false
         }
         firebaseAppDistribution {
           // A new beta release is created for each commit.
