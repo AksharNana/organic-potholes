@@ -8,6 +8,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,6 +52,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -455,45 +457,58 @@ public class PlacePageController extends Fragment implements
 
     if(!potholeCatPresent){
       BookmarkManager.INSTANCE.createCategory("Potholes");
+      new NetworkTask().execute();
     }else{
-      // Clean Pothole Category
-      int bookmarkCount = categories.get(catIdx).getBookmarksCount();
-      for(int i = 0; i < bookmarkCount; i++){
-        long bookMarkID = BookmarkManager.INSTANCE.getBookmarkIdByPosition(catId,i);
-        BookmarkManager.INSTANCE.deleteBookmark(bookMarkID);
-      }
+      Snackbar deleteNotice = Snackbar.make(getView(),"Please delete Pothole List First!", Snackbar.LENGTH_SHORT);
+      deleteNotice.show();
     }
+  }
 
-    OkHttpClient client = new OkHttpClient();
-    Request request = new Request.Builder()
-            .url("https://busy-pink-tadpole-toga.cyclic.cloud/api/pothole/getAllPotholes")
-            .build();
-    
-    try (Response res = client.newCall(request).execute()){
-      if(!res.isSuccessful()) throw new IOException("Unexpected code" + res);
-      try {
+  private class NetworkTask extends AsyncTask<Void, Void, ArrayList<Pair<Double,Double>>> {
+    @Override
+    protected ArrayList<Pair<Double,Double>> doInBackground(Void... voids) {
+      ArrayList<Pair<Double, Double>> results = new ArrayList<>();
+      OkHttpClient client = new OkHttpClient();
+      Request request = new Request.Builder()
+              .url("https://busy-pink-tadpole-toga.cyclic.cloud/api/pothole/getAllPotholes")
+              .build();
+
+      try (Response res = client.newCall(request).execute()) {
+        if (!res.isSuccessful()) {
+          throw new IOException("Unexpected code " + res);
+        }
+
         JSONArray arrRes = new JSONArray(res.body().string());
-        for(int i = 0; i < arrRes.length(); i++){
+        for (int i = 0; i < arrRes.length(); i++) {
           JSONObject obj = arrRes.getJSONObject(i);
           double lat = obj.getDouble("Latitude");
           double lon = obj.getDouble("Longitude");
-          System.out.println("Coordinates Are: " + lat + " and " + lon);
-          BookmarkManager.INSTANCE.addNewBookmark(lat,lon);
+          results.add(new Pair<>(lat,lon));
         }
-      } catch (JSONException e) {
-        throw new RuntimeException(e);
+      } catch (IOException | JSONException e) {
+        return null;
       }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-//    Handler mHandler = new Handler(Looper.getMainLooper());
-//    mHandler.post(new Runnable() {
-//      @Override
-//      public void run() {
-//
-//      }
-//    });
 
+      return results;
+    }
+
+    @Override
+    protected void onPostExecute(ArrayList<Pair<Double, Double>> results) {
+      if (results != null) {
+        Snackbar doneNotice = Snackbar.make(getView(),"Pothole List Downloaded!", Snackbar.LENGTH_SHORT);
+        for (int i = 0; i < results.size(); i++) {
+          Pair<Double,Double> coords = results.get(i);
+          System.out.println("Received Bookmark: " + coords.first + ","+ coords.second);
+          BookmarkManager.INSTANCE.addNewBookmark(coords.first, coords.second);
+        }
+        doneNotice.show();
+        // Success: Handle UI updates, e.g., show a toast or update the UI with the new data
+      } else {
+          System.out.println("Error has occurred!");
+        // Error occurred during the network call, handle the error
+        // You can show an error message or log the error here
+      }
+    }
   }
 
   private void onBackBtnClicked()
