@@ -1,5 +1,8 @@
 [[Types]]
 
+  [type.pothole.hole]
+    en = Pothole
+
   [type.addr_interpolation]
     en = Address/Block
     af = Adres/blok

@@ -30,6 +30,7 @@ highway-motorway-tunnel                             # pathtext z10- (also has sh
 highway-trunk                                       # pathtext z10- (also has shield::shield z10-, line z7-, line(casing) z14-)
 highway-trunk-bridge                                # pathtext z10- (also has shield::shield z10-, line z7-, line::bridgeblack z13-, line::bridgewhite z13-, line(casing) z14-)
 highway-trunk-tunnel                                # pathtext z10- (also has shield::shield z10-, line z7-, line(casing) z12-)
+pothole-hole                                        # icon z10-
 === 4350
 
 highway-primary                                     # pathtext z10- (also has shield::shield z10-, line z8-, line(casing) z14-)

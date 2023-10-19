@@ -4,11 +4,15 @@ import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.Insets;
@@ -26,6 +30,8 @@ import app.organicmaps.MwmActivity;
 import app.organicmaps.R;
 import app.organicmaps.api.Const;
 import app.organicmaps.api.ParsedMwmRequest;
+import app.organicmaps.bookmarks.data.Bookmark;
+import app.organicmaps.bookmarks.data.BookmarkCategory;
 import app.organicmaps.bookmarks.data.BookmarkManager;
 import app.organicmaps.bookmarks.data.MapObject;
 import app.organicmaps.bookmarks.data.RoadWarningMarkType;
@@ -36,9 +42,21 @@ import app.organicmaps.util.ThemeUtils;
 import app.organicmaps.util.UiUtils;
 import app.organicmaps.util.bottomsheet.MenuBottomSheetFragment;
 import app.organicmaps.util.bottomsheet.MenuBottomSheetItem;
+import app.organicmaps.util.concurrency.ThreadPool;
 import app.organicmaps.util.log.Logger;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -399,6 +417,10 @@ public class PlacePageController extends Fragment implements
       case ROUTE_AVOID_FERRY:
         onAvoidFerryBtnClicked();
         break;
+
+      case POTHOLE:
+        onBookmarkPotholeBtnClicked();
+        break;
     }
   }
 
@@ -413,6 +435,65 @@ public class PlacePageController extends Fragment implements
       Framework.nativeDeleteBookmarkFromMapObject();
     else
       BookmarkManager.INSTANCE.addNewBookmark(mMapObject.getLat(), mMapObject.getLon());
+  }
+
+  private void onBookmarkPotholeBtnClicked()
+  {
+    // Get bookmark Category
+    List<BookmarkCategory> categories = BookmarkManager.INSTANCE.getCategories();
+    long catId = 0;
+    int catIdx = 0;
+    boolean potholeCatPresent = false;
+    for(int i = 0; i < categories.size(); i++){
+      if(categories.get(i).getName().equals("Potholes")){
+        potholeCatPresent = true;
+        catId = categories.get(i).getId();
+        catIdx = i;
+        break;
+      }
+    }
+
+    if(!potholeCatPresent){
+      BookmarkManager.INSTANCE.createCategory("Potholes");
+    }else{
+      // Clean Pothole Category
+      int bookmarkCount = categories.get(catIdx).getBookmarksCount();
+      for(int i = 0; i < bookmarkCount; i++){
+        long bookMarkID = BookmarkManager.INSTANCE.getBookmarkIdByPosition(catId,i);
+        BookmarkManager.INSTANCE.deleteBookmark(bookMarkID);
+      }
+    }
+
+    OkHttpClient client = new OkHttpClient();
+    Request request = new Request.Builder()
+            .url("https://busy-pink-tadpole-toga.cyclic.cloud/api/pothole/getAllPotholes")
+            .build();
+    
+    try (Response res = client.newCall(request).execute()){
+      if(!res.isSuccessful()) throw new IOException("Unexpected code" + res);
+      try {
+        JSONArray arrRes = new JSONArray(res.body().string());
+        for(int i = 0; i < arrRes.length(); i++){
+          JSONObject obj = arrRes.getJSONObject(i);
+          double lat = obj.getDouble("Latitude");
+          double lon = obj.getDouble("Longitude");
+          System.out.println("Coordinates Are: " + lat + " and " + lon);
+          BookmarkManager.INSTANCE.addNewBookmark(lat,lon);
+        }
+      } catch (JSONException e) {
+        throw new RuntimeException(e);
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+//    Handler mHandler = new Handler(Looper.getMainLooper());
+//    mHandler.post(new Runnable() {
+//      @Override
+//      public void run() {
+//
+//      }
+//    });
+
   }
 
   private void onBackBtnClicked()
@@ -568,6 +649,9 @@ public class PlacePageController extends Fragment implements
         buttons.add(mapObject.isBookmark()
                     ? PlacePageButtons.ButtonType.BOOKMARK_DELETE
                     : PlacePageButtons.ButtonType.BOOKMARK_SAVE);
+        buttons.add(mapObject.isBookmark()
+              ? PlacePageButtons.ButtonType.POTHOLE
+              : PlacePageButtons.ButtonType.POTHOLE);
 
       if (needToShowRoutingButtons)
       {
@@ -656,4 +740,5 @@ public class PlacePageController extends Fragment implements
   {
     void onPlacePageRequestToggleRouteSettings(@NonNull RoadType roadType);
   }
+
 }

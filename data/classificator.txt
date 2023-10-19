@@ -826,6 +826,9 @@ world  +
         town  -
         village  -
         {}
+    pothole  +
+        hole  -
+        {}
     power  +
         generator  +
             gas  -

@@ -117,6 +117,9 @@
 
 	<!-- SECTION: Search categories -->
 	<!-- Search category for cafes, bars, restaurants; any changes should be duplicated in categories.txt @eat! -->
+	<string name="pothole">Pothole</string>
+
+	<!-- Search category for cafes, bars, restaurants; any changes should be duplicated in categories.txt @eat! -->
 	<string name="eat">Where to eat</string>
 	<!-- Search category for grocery stores; any changes should be duplicated in categories.txt @food! -->
 	<string name="food">Groceries</string>
@@ -538,6 +541,7 @@
 	<string name="hour">h</string>
 	<string name="minute">min</string>
 	<string name="placepage_more_button">More</string>
+	<string name="placepage_pothole_button">Refresh Potholes</string>
 	<string name="placepage_edit_bookmark_button">Edit Bookmark</string>
 	<string name="editor_comment_hint">Comment…</string>
 	<string name="editor_reset_edits_message">Discard all local changes?</string>
@@ -559,6 +563,7 @@
 	<string name="placepage_add_place_button">Add a place to the map</string>
 
 	<string name="placepage_add_pothole_button">Add a pothole to the map</string>
+	<string name="get_pothole_button">Get potholes</string>
 
 	<!-- Displayed when saving some edits to the map to warn against publishing personal data -->
 	<string name="editor_share_to_all_dialog_title">Do you want to send it to all users?</string>
@@ -781,6 +786,7 @@
 	<string name="app_tip_00">Thank you for using our community-built maps!</string>
 
 	<!-- SECTION: Types -->
+	<string name="type.pothole">Pothole</string>
 	<string name="type.addr_interpolation">Address/Block</string>
 	<string name="type.addr_interpolation.even">Address/Block</string>
 	<string name="type.addr_interpolation.odd">Address/Block</string>

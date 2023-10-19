@@ -47,6 +47,7 @@ highway-trunk-bridge                                # line z7- (also has line::b
 highway-trunk-tunnel                                # line z7- (also has line(casing) z12-, pathtext z10-, shield::shield z10-)
 highway-world_level                                 # line z4-9
 highway-world_towns_level                           # line z6-9
+pothole-hole                                        # WARNING: no drule defined for the priority (also has icon z10-)
 === 250
 
 # highway-motorway                                  # line(casing) z14- (also has line z7-, pathtext z10-, shield::shield z10-)

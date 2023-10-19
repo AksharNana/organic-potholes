@@ -61,6 +61,10 @@ public class PlacePageButtonFactory
         titleId = R.string.placepage_more_button;
         iconId = R.drawable.ic_more;
         break;
+      case POTHOLE:
+        titleId = R.string.placepage_pothole_button;
+        iconId = R.drawable.ic_download;
+        break;
     }
     return new PlacePageButton(titleId, iconId, buttonType);
   }

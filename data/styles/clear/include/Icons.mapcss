@@ -204,6 +204,10 @@ area|z19-[man_made=water_well],
 
 /* 3. TRANSPORT */
 
+node|z10-[pothole=hole],
+area|z10-[pothole=hole],
+{icon-image: pothole.svg;icon-min-distance: 36;}
+
 node|z12-[railway=station][!transport],
 node|z13-[railway=halt],
 node|z14-[railway=station][transport=subway],

@@ -67,6 +67,9 @@
 # Запрос "магазин мебели" так же заматчится (1 ошибка).
 
 
+@pothole
+en:Pothole|Hole
+
 # First keyword should match [eat] definition in strings.txt!
 @eat
 en:Where to eat|eat|Food

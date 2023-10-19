@@ -43,8 +43,10 @@ import app.organicmaps.base.CustomNavigateUpListener;
 import app.organicmaps.base.NoConnectionListener;
 import app.organicmaps.base.OnBackPressListener;
 import app.organicmaps.bookmarks.BookmarkCategoriesActivity;
+import app.organicmaps.bookmarks.data.Bookmark;
 import app.organicmaps.bookmarks.data.BookmarkInfo;
 import app.organicmaps.bookmarks.data.BookmarkManager;
+import app.organicmaps.bookmarks.data.FeatureId;
 import app.organicmaps.bookmarks.data.MapObject;
 import app.organicmaps.bookmarks.data.Track;
 import app.organicmaps.downloader.DownloaderActivity;
@@ -104,8 +106,16 @@ import app.organicmaps.widget.menu.MainMenu;
 import app.organicmaps.widget.placepage.PlacePageController;
 import app.organicmaps.widget.placepage.PlacePageData;
 import app.organicmaps.widget.placepage.PlacePageViewModel;
+import okhttp3.Call;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Stack;
@@ -115,6 +125,9 @@ import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static app.organicmaps.location.LocationState.LOCATION_TAG;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class MwmActivity extends BaseMwmFragmentActivity
     implements PlacePageActivationListener,
@@ -542,14 +555,41 @@ public class MwmActivity extends BaseMwmFragmentActivity
             case POTHOLE:
               if (Framework.nativeIsDownloadedMapAtScreenCenter()) {
                 final double[] point = Framework.nativeGetScreenRectCenter();
+                OkHttpClient client = new OkHttpClient();
+                JSONObject jsonObject = new JSONObject();
+                try {
+                  jsonObject.put("Longitude",point[0]);
+                  jsonObject.put("Latitude", point[1]);
+                }catch (JSONException e){
+                  e.printStackTrace();
+                }
+                String json = jsonObject.toString();
+                RequestBody body = RequestBody.create(
+                        MediaType.parse("application/json"),json);
+                Request request = new Request.Builder()
+                        .url("https://busy-pink-tadpole-toga.cyclic.cloud/api/pothole/addPothole")
+                        .post(body)
+                        .build();
+                new Thread(new Runnable() {
+                  @Override
+                  public void run() {
+                    Call call = client.newCall(request);
+                    try (Response res = client.newCall(request).execute()){
+                      if(!res.isSuccessful()) throw new IOException("Unexpected code" + res);
+                      System.out.println(res.toString());
+                    } catch (IOException e) {
+                      throw new RuntimeException(e);
+                    }
+                  }
+                }).start();
                 final String message = point[0] + " " + point[1] + " " + Framework.nativeGetDrawScale();
+                System.out.println("Pothole selection: " + message);
                 dismissAlertDialog();
                 mAlertDialog = new MaterialAlertDialogBuilder(this, R.style.MwmTheme_AlertDialog)
                         .setTitle(message)
                         .setPositiveButton(R.string.ok, null)
                         .setOnDismissListener(dialog -> mAlertDialog = null)
                         .show();
-                System.out.println("Pothole selection: " + message);
               }else
               {
                 dismissAlertDialog();
