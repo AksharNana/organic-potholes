@@ -558,8 +558,8 @@ public class MwmActivity extends BaseMwmFragmentActivity
                 OkHttpClient client = new OkHttpClient();
                 JSONObject jsonObject = new JSONObject();
                 try {
-                  jsonObject.put("Longitude",point[0]);
-                  jsonObject.put("Latitude", point[1]);
+                  jsonObject.put("Latitude", point[0]);
+                  jsonObject.put("Longitude",point[1]);
                 }catch (JSONException e){
                   e.printStackTrace();
                 }
