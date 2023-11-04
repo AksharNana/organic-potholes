@@ -1,6 +1,7 @@
 package app.organicmaps.widget.placepage;
 
 import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -48,8 +49,10 @@ import app.organicmaps.util.concurrency.ThreadPool;
 import app.organicmaps.util.log.Logger;
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
@@ -434,8 +437,47 @@ public class PlacePageController extends Fragment implements
     if (mMapObject == null)
       return;
     // No need to call setMapObject here as the native methods will reopen the place page
-    if (mMapObject.isBookmark())
+    if (mMapObject.isBookmark()){
+      if(mMapObject.getName().equalsIgnoreCase("pothole")){
+        System.out.println("Deleting pothole: " + mMapObject.getLat() + " " + mMapObject.getLon());
+        OkHttpClient client = new OkHttpClient();
+
+        // Get bookmark Category
+        List<BookmarkCategory> categories = BookmarkManager.INSTANCE.getCategories();
+        long catId = 0;
+        for(int i = 0; i < categories.size(); i++){
+          if(categories.get(i).getName().equals("Potholes")){
+            catId = categories.get(i).getId();
+            break;
+          }
+        }
+        long bookmarkID = 0;
+        int bkmrkCount = BookmarkManager.INSTANCE.getCategoryById(catId).getBookmarksCount();
+        for(int i = 0; i < bkmrkCount; i++){
+          long id = BookmarkManager.INSTANCE.getBookmarkIdByPosition(catId,i);
+          if(BookmarkManager.INSTANCE.getBookmarkAddress(id).equals(mMapObject.getAddress())){
+            bookmarkID = id;
+          }
+        }
+
+        Request request = new Request.Builder()
+                .url("https://busy-pink-tadpole-toga.cyclic.cloud/api/pothole/deletePothole/" + BookmarkManager.INSTANCE.getBookmarkDescription(bookmarkID))
+                .delete()
+                .build();
+        new Thread(new Runnable() {
+          @Override
+          public void run() {
+            try (Response res = client.newCall(request).execute()){
+              if(!res.isSuccessful()) throw new IOException("Unexpected code" + res);
+              System.out.println(res.toString());
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        }).start();
+      }
       Framework.nativeDeleteBookmarkFromMapObject();
+    }
     else
       BookmarkManager.INSTANCE.addNewBookmark(mMapObject.getLat(), mMapObject.getLon());
   }
@@ -464,10 +506,10 @@ public class PlacePageController extends Fragment implements
     }
   }
 
-  private class NetworkTask extends AsyncTask<Void, Void, ArrayList<Pair<Double,Double>>> {
+  private class NetworkTask extends AsyncTask<Void, Void, ArrayList<Pair<Pair<Double,Double>,String>>> {
     @Override
-    protected ArrayList<Pair<Double,Double>> doInBackground(Void... voids) {
-      ArrayList<Pair<Double, Double>> results = new ArrayList<>();
+    protected ArrayList<Pair<Pair<Double,Double>,String>> doInBackground(Void... voids) {
+      ArrayList<Pair<Pair<Double,Double>,String>> results = new ArrayList<>();
       OkHttpClient client = new OkHttpClient();
       Request request = new Request.Builder()
               .url("https://busy-pink-tadpole-toga.cyclic.cloud/api/pothole/getAllPotholes")
@@ -483,7 +525,9 @@ public class PlacePageController extends Fragment implements
           JSONObject obj = arrRes.getJSONObject(i);
           double lat = obj.getDouble("Latitude");
           double lon = obj.getDouble("Longitude");
-          results.add(new Pair<>(lat,lon));
+          Pair<Double,Double> pair = new Pair<>(lat,lon);
+          String id = obj.getString("_id");
+          results.add(new Pair<>(pair,id));
         }
       } catch (IOException | JSONException e) {
         return null;
@@ -493,16 +537,16 @@ public class PlacePageController extends Fragment implements
     }
 
     @Override
-    protected void onPostExecute(ArrayList<Pair<Double, Double>> results) {
+    protected void onPostExecute(ArrayList<Pair<Pair<Double,Double>,String>> results) {
       if (results != null) {
         BookmarkManager.INSTANCE.createCategory("Potholes");
         Snackbar doneNotice = Snackbar.make(getView(),"Pothole List Downloaded!", Snackbar.LENGTH_SHORT);
         for (int i = 0; i < results.size(); i++) {
-          Pair<Double,Double> coords = results.get(i);
-          System.out.println("Received Bookmark: " + coords.first + ","+ coords.second);
-          BookmarkManager.INSTANCE.addNewBookmark(coords.first, coords.second);
+          Pair<Pair<Double,Double>,String> coords = results.get(i);
+          System.out.println("Received Bookmark: " + coords.first.first + ","+ coords.first.second + " : " + coords.second);
+          Bookmark bookmark = BookmarkManager.INSTANCE.addNewBookmark(coords.first.first, coords.first.second);
+          BookmarkManager.INSTANCE.updatePotholeBookmark(bookmark.getBookmarkId(),coords.second);
         }
-        BookmarkManager.INSTANCE.updatePotholeBookmark();
         doneNotice.show();
         // Success: Handle UI updates, e.g., show a toast or update the UI with the new data
       } else {
@@ -634,6 +678,7 @@ public class PlacePageController extends Fragment implements
     }
   }
 
+  @SuppressLint("SuspiciousIndentation")
   private void updateButtons(MapObject mapObject, boolean showBackButton, boolean showRoutingButton)
   {
     List<PlacePageButtons.ButtonType> buttons = new ArrayList<>();

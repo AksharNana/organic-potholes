@@ -142,20 +142,8 @@ public enum BookmarkManager
     return bookmark;
   }
 
-  public void updatePotholeBookmark(){
-    List<BookmarkCategory> categories = BookmarkManager.INSTANCE.getCategories();
-    long catId = 0;
-    for(int i = 0; i < categories.size(); i++){
-      if(categories.get(i).getName().equals("Potholes")){
-        catId = categories.get(i).getId();
-        break;
-      }
-    }
-    BookmarkCategory potholeCat = BookmarkManager.INSTANCE.getCategoryById(catId);
-    for(int i = 0; i < potholeCat.getBookmarksCount(); i++){
-      long bookmarkID = BookmarkManager.INSTANCE.getBookmarkIdByPosition(catId,i);
-      BookmarkManager.INSTANCE.setBookmarkParams(bookmarkID,"Pothole", Icon.PREDEFINED_COLOR_BLUE,"This is a pothole!");
-    }
+  public void updatePotholeBookmark(long bookmarkID, String desc){
+    BookmarkManager.INSTANCE.setBookmarkParams(bookmarkID,"Pothole", Icon.PREDEFINED_COLOR_BLUE,desc);
   }
 
   public void addLoadingListener(@NonNull BookmarksLoadingListener listener)
