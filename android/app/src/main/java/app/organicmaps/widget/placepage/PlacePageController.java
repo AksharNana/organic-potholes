@@ -34,6 +34,7 @@ import app.organicmaps.api.ParsedMwmRequest;
 import app.organicmaps.bookmarks.data.Bookmark;
 import app.organicmaps.bookmarks.data.BookmarkCategory;
 import app.organicmaps.bookmarks.data.BookmarkManager;
+import app.organicmaps.bookmarks.data.Icon;
 import app.organicmaps.bookmarks.data.MapObject;
 import app.organicmaps.bookmarks.data.RoadWarningMarkType;
 import app.organicmaps.routing.RoutingController;
@@ -456,7 +457,6 @@ public class PlacePageController extends Fragment implements
     }
 
     if(!potholeCatPresent){
-      BookmarkManager.INSTANCE.createCategory("Potholes");
       new NetworkTask().execute();
     }else{
       Snackbar deleteNotice = Snackbar.make(getView(),"Please delete Pothole List First!", Snackbar.LENGTH_SHORT);
@@ -495,12 +495,14 @@ public class PlacePageController extends Fragment implements
     @Override
     protected void onPostExecute(ArrayList<Pair<Double, Double>> results) {
       if (results != null) {
+        BookmarkManager.INSTANCE.createCategory("Potholes");
         Snackbar doneNotice = Snackbar.make(getView(),"Pothole List Downloaded!", Snackbar.LENGTH_SHORT);
         for (int i = 0; i < results.size(); i++) {
           Pair<Double,Double> coords = results.get(i);
           System.out.println("Received Bookmark: " + coords.first + ","+ coords.second);
           BookmarkManager.INSTANCE.addNewBookmark(coords.first, coords.second);
         }
+        BookmarkManager.INSTANCE.updatePotholeBookmark();
         doneNotice.show();
         // Success: Handle UI updates, e.g., show a toast or update the UI with the new data
       } else {

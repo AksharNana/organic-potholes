@@ -171,7 +171,7 @@ public class BookmarkCategoriesAdapter extends BaseBookmarkCategoryAdapter<Recyc
 
     if (position == getItemCount() - 1)
       return TYPE_ACTION_IMPORT;
-
+    
     return TYPE_CATEGORY_ITEM;
   }
 
