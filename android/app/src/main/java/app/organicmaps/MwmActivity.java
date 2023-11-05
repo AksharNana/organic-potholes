@@ -114,6 +114,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -573,7 +574,6 @@ public class MwmActivity extends BaseMwmFragmentActivity
                 new Thread(new Runnable() {
                   @Override
                   public void run() {
-                    Call call = client.newCall(request);
                     try (Response res = client.newCall(request).execute()){
                       if(!res.isSuccessful()) throw new IOException("Unexpected code" + res);
                       System.out.println(res.toString());
@@ -582,7 +582,7 @@ public class MwmActivity extends BaseMwmFragmentActivity
                     }
                   }
                 }).start();
-                final String message = point[0] + " " + point[1] + " " + Framework.nativeGetDrawScale();
+                final String message = "Successfully added pothole!\nPlease refresh pothole list.";
                 System.out.println("Pothole selection: " + message);
                 dismissAlertDialog();
                 mAlertDialog = new MaterialAlertDialogBuilder(this, R.style.MwmTheme_AlertDialog)

@@ -429,7 +429,6 @@ public class PlacePageController extends Fragment implements
         break;
     }
   }
-
   private void onBookmarkBtnClicked()
   {
     // mMapObject is set to null when the place page closes
@@ -470,6 +469,8 @@ public class PlacePageController extends Fragment implements
             try (Response res = client.newCall(request).execute()){
               if(!res.isSuccessful()) throw new IOException("Unexpected code" + res);
               System.out.println(res.toString());
+              Snackbar deleteNotice = Snackbar.make(getView(),"Removed pothole from the map!", Snackbar.LENGTH_SHORT);
+              deleteNotice.show();
             } catch (IOException e) {
               throw new RuntimeException(e);
             }
@@ -486,14 +487,10 @@ public class PlacePageController extends Fragment implements
   {
     // Get bookmark Category
     List<BookmarkCategory> categories = BookmarkManager.INSTANCE.getCategories();
-    long catId = 0;
-    int catIdx = 0;
     boolean potholeCatPresent = false;
     for(int i = 0; i < categories.size(); i++){
       if(categories.get(i).getName().equals("Potholes")){
         potholeCatPresent = true;
-        catId = categories.get(i).getId();
-        catIdx = i;
         break;
       }
     }
