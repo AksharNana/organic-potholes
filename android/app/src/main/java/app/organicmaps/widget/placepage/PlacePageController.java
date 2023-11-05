@@ -429,6 +429,19 @@ public class PlacePageController extends Fragment implements
         break;
     }
   }
+
+  private double[] calculateCoordinateDifference(double lat1, double lon1, double lat2, double lon2) {
+    double latDiff = Math.abs(lat1 - lat2);
+    double lonDiff = Math.abs(lon1 - lon2);
+    return new double[]{latDiff, lonDiff};
+  }
+
+  private boolean areCoordinatesEqual(double lat1, double lon1, double lat2, double lon2, double tolerance) {
+    double[] diffs = calculateCoordinateDifference(lat1, lon1, lat2, lon2);
+    double latDiff = diffs[0];
+    double lonDiff = diffs[1];
+    return latDiff < tolerance && lonDiff < tolerance;
+  }
   private void onBookmarkBtnClicked()
   {
     // mMapObject is set to null when the place page closes
@@ -450,15 +463,26 @@ public class PlacePageController extends Fragment implements
             break;
           }
         }
-        long bookmarkID = 0;
+        long bookmarkID = -1;
         int bkmrkCount = BookmarkManager.INSTANCE.getCategoryById(catId).getBookmarksCount();
+        System.out.println("mMapObject has coords: " + mMapObject.getLat() + "," + mMapObject.getLon());
         for(int i = 0; i < bkmrkCount; i++){
           long id = BookmarkManager.INSTANCE.getBookmarkIdByPosition(catId,i);
-          if(BookmarkManager.INSTANCE.getBookmarkAddress(id).equals(mMapObject.getAddress())){
+          double x,y;
+          x = BookmarkManager.INSTANCE.getBookmarkInfo(id).getLon();
+          y = BookmarkManager.INSTANCE.getBookmarkInfo(id).getLat();
+          if(areCoordinatesEqual(y,x,mMapObject.getLat(),mMapObject.getLon(),1e-12)){
+            System.out.println("Bookmark Address Match: " + y + "," + x + " with id: " + id);
             bookmarkID = id;
+            break;
           }
         }
-
+        if(bookmarkID == -1){
+          Snackbar deleteNotice = Snackbar.make(getView(),"An error occurred, please try again!", Snackbar.LENGTH_SHORT);
+          deleteNotice.show();
+          return;
+        }
+        System.out.println("Want to delete bookmark: " + BookmarkManager.INSTANCE.getBookmarkDescription(bookmarkID));
         Request request = new Request.Builder()
                 .url("https://busy-pink-tadpole-toga.cyclic.cloud/api/pothole/deletePothole/" + BookmarkManager.INSTANCE.getBookmarkDescription(bookmarkID))
                 .delete()
