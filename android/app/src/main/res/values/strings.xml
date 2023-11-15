@@ -542,6 +542,7 @@
 	<string name="minute">min</string>
 	<string name="placepage_more_button">More</string>
 	<string name="placepage_pothole_button">Refresh Potholes</string>
+	<string name="no_internet">Internet Connection Required</string>
 	<string name="placepage_edit_bookmark_button">Edit Bookmark</string>
 	<string name="editor_comment_hint">Comment…</string>
 	<string name="editor_reset_edits_message">Discard all local changes?</string>

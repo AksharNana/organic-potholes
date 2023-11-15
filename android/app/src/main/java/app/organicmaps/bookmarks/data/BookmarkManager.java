@@ -142,7 +142,14 @@ public enum BookmarkManager
     return bookmark;
   }
 
+  /**
+   * Updates the parameters of a pothole bookmark with the given ID.
+   *
+   * @param bookmarkID The ID of the pothole bookmark to be updated.
+   * @param desc       The description to be set for the pothole bookmark.
+   */
   public void updatePotholeBookmark(long bookmarkID, String desc){
+    // Set the parameters for the pothole bookmark using BookmarkManager
     BookmarkManager.INSTANCE.setBookmarkParams(bookmarkID,"Pothole", Icon.PREDEFINED_COLOR_BLUE,desc);
   }
 

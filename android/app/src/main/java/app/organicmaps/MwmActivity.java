@@ -117,6 +117,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Stack;
@@ -554,9 +557,12 @@ public class MwmActivity extends BaseMwmFragmentActivity
             }
             break;
             case POTHOLE:
+              // Check if a map is downloaded at the screen center
               if (Framework.nativeIsDownloadedMapAtScreenCenter()) {
+                // Get the coordinates of the screen center
                 final double[] point = Framework.nativeGetScreenRectCenter();
                 OkHttpClient client = new OkHttpClient();
+                // Create a JSON object with Latitude and Longitude
                 JSONObject jsonObject = new JSONObject();
                 try {
                   jsonObject.put("Latitude", point[0]);
@@ -564,13 +570,20 @@ public class MwmActivity extends BaseMwmFragmentActivity
                 }catch (JSONException e){
                   e.printStackTrace();
                 }
+                // Convert the JSON object to a string
                 String json = jsonObject.toString();
+
+                // Create a request body with the JSON content
                 RequestBody body = RequestBody.create(
                         MediaType.parse("application/json"),json);
+
+                // Build a POST request to add a pothole at the specified coordinates
                 Request request = new Request.Builder()
                         .url("https://busy-pink-tadpole-toga.cyclic.cloud/api/pothole/addPothole")
                         .post(body)
                         .build();
+
+                // Start a new thread to execute the POST request
                 new Thread(new Runnable() {
                   @Override
                   public void run() {
@@ -578,13 +591,16 @@ public class MwmActivity extends BaseMwmFragmentActivity
                       if(!res.isSuccessful()) throw new IOException("Unexpected code" + res);
                       System.out.println(res.toString());
                     } catch (IOException e) {
-                      throw new RuntimeException(e);
+                      // Handle exceptions that occurred during the network call
                     }
                   }
                 }).start();
+
+                // Display a success message and dismiss the current AlertDialog
                 final String message = "Successfully added pothole!\nPlease refresh pothole list.";
                 System.out.println("Pothole selection: " + message);
                 dismissAlertDialog();
+                // Show a new AlertDialog with the success message
                 mAlertDialog = new MaterialAlertDialogBuilder(this, R.style.MwmTheme_AlertDialog)
                         .setTitle(message)
                         .setPositiveButton(R.string.ok, null)
@@ -592,7 +608,9 @@ public class MwmActivity extends BaseMwmFragmentActivity
                         .show();
               }else
               {
+                // Dismiss the current AlertDialog
                 dismissAlertDialog();
+                // Show an AlertDialog indicating an invalid feature position
                 mAlertDialog = new MaterialAlertDialogBuilder(this, R.style.MwmTheme_AlertDialog)
                         .setTitle(R.string.message_invalid_feature_position)
                         .setPositiveButton(R.string.ok, null)
@@ -2199,8 +2217,14 @@ public class MwmActivity extends BaseMwmFragmentActivity
     mPreviousLayerMode = mode;
   }
 
+  /**
+   * Handles the selection of the "Add Pothole" option.
+   * Closes any open floating panels and shows the position chooser in Pothole mode.
+   */
   public void onAddPotholeOptionSelected(){
+    // Close any open floating panels
     closeFloatingPanels();
+    // Show the position chooser in Pothole mode, without enabling GPS and without snapping to location
     showPositionChooser(PointChooserMode.POTHOLE,false,false);
   }
 

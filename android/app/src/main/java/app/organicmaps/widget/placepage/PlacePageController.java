@@ -1,14 +1,17 @@
 package app.organicmaps.widget.placepage;
-
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -63,6 +66,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -430,18 +436,48 @@ public class PlacePageController extends Fragment implements
     }
   }
 
+  /**
+   * Calculates the absolute differences in latitude and longitude between two coordinates.
+   *
+   * @param lat1 The latitude of the first coordinate.
+   * @param lon1 The longitude of the first coordinate.
+   * @param lat2 The latitude of the second coordinate.
+   * @param lon2 The longitude of the second coordinate.
+   * @return An array containing the absolute differences in latitude and longitude.
+   */
   private double[] calculateCoordinateDifference(double lat1, double lon1, double lat2, double lon2) {
+    // Calculate the absolute differences in latitude and longitude
     double latDiff = Math.abs(lat1 - lat2);
     double lonDiff = Math.abs(lon1 - lon2);
+
+    // Return an array containing the calculated differences
     return new double[]{latDiff, lonDiff};
   }
 
+  /**
+   * Checks if two coordinates are equal within a specified tolerance.
+   *
+   * @param lat1      The latitude of the first coordinate.
+   * @param lon1      The longitude of the first coordinate.
+   * @param lat2      The latitude of the second coordinate.
+   * @param lon2      The longitude of the second coordinate.
+   * @param tolerance The maximum allowed difference for coordinates to be considered equal.
+   * @return True if the coordinates are equal within the specified tolerance, otherwise false.
+   */
   private boolean areCoordinatesEqual(double lat1, double lon1, double lat2, double lon2, double tolerance) {
+    // Calculate the absolute differences in latitude and longitude using the helper function
     double[] diffs = calculateCoordinateDifference(lat1, lon1, lat2, lon2);
     double latDiff = diffs[0];
     double lonDiff = diffs[1];
+
+    // Check if both latitude and longitude differences are within the specified tolerance
     return latDiff < tolerance && lonDiff < tolerance;
   }
+
+  /**
+   * Handles the click event for the bookmark button.
+   * If the mMapObject is not null, it either deletes a bookmark or adds a new one based on the mMapObject state.
+   */
   private void onBookmarkBtnClicked()
   {
     // mMapObject is set to null when the place page closes
@@ -454,8 +490,10 @@ public class PlacePageController extends Fragment implements
         System.out.println("Deleting pothole: " + mMapObject.getLat() + " " + mMapObject.getLon());
         OkHttpClient client = new OkHttpClient();
 
-        // Get bookmark Category
+        // Get bookmark Categories
         List<BookmarkCategory> categories = BookmarkManager.INSTANCE.getCategories();
+
+        // Find the category with the name "Potholes"
         long catId = 0;
         for(int i = 0; i < categories.size(); i++){
           if(categories.get(i).getName().equals("Potholes")){
@@ -466,27 +504,32 @@ public class PlacePageController extends Fragment implements
         long bookmarkID = -1;
         int bkmrkCount = BookmarkManager.INSTANCE.getCategoryById(catId).getBookmarksCount();
         System.out.println("mMapObject has coords: " + mMapObject.getLat() + "," + mMapObject.getLon());
+        // Iterate through bookmarks in the category and find the matching bookmark
         for(int i = 0; i < bkmrkCount; i++){
           long id = BookmarkManager.INSTANCE.getBookmarkIdByPosition(catId,i);
           double x,y;
           x = BookmarkManager.INSTANCE.getBookmarkInfo(id).getLon();
           y = BookmarkManager.INSTANCE.getBookmarkInfo(id).getLat();
+          // Check if coordinates match within a tolerance
           if(areCoordinatesEqual(y,x,mMapObject.getLat(),mMapObject.getLon(),1e-12)){
             System.out.println("Bookmark Address Match: " + y + "," + x + " with id: " + id);
             bookmarkID = id;
             break;
           }
         }
+        // Check if a matching bookmark was found
         if(bookmarkID == -1){
           Snackbar deleteNotice = Snackbar.make(getView(),"An error occurred, please try again!", Snackbar.LENGTH_SHORT);
           deleteNotice.show();
           return;
         }
         System.out.println("Want to delete bookmark: " + BookmarkManager.INSTANCE.getBookmarkDescription(bookmarkID));
+        // Build a DELETE request to remove the pothole bookmark
         Request request = new Request.Builder()
                 .url("https://busy-pink-tadpole-toga.cyclic.cloud/api/pothole/deletePothole/" + BookmarkManager.INSTANCE.getBookmarkDescription(bookmarkID))
                 .delete()
                 .build();
+        // Start a new thread to execute the HTTP request
         new Thread(new Runnable() {
           @Override
           public void run() {
@@ -501,16 +544,24 @@ public class PlacePageController extends Fragment implements
           }
         }).start();
       }
+      // Call native method to delete bookmark from the map object
       Framework.nativeDeleteBookmarkFromMapObject();
     }
     else
+      // If the place is not bookmarked, add a new bookmark
       BookmarkManager.INSTANCE.addNewBookmark(mMapObject.getLat(), mMapObject.getLon());
   }
 
+  /**
+   * Handles the click event for the bookmark pothole button.
+   * Checks if the "Potholes" category is present, and if not, initiates a network task to create the category.
+   * If the category is already present, displays a Snackbar message.
+   */
   private void onBookmarkPotholeBtnClicked()
   {
     // Get bookmark Category
     List<BookmarkCategory> categories = BookmarkManager.INSTANCE.getCategories();
+    // Check if the "Potholes" category is present
     boolean potholeCatPresent = false;
     for(int i = 0; i < categories.size(); i++){
       if(categories.get(i).getName().equals("Potholes")){
@@ -518,20 +569,25 @@ public class PlacePageController extends Fragment implements
         break;
       }
     }
-
+    // If the "Potholes" category is not present, initiate a network task to create it
     if(!potholeCatPresent){
       new NetworkTask().execute();
     }else{
+      // Display a Snackbar message if the category is already present
       Snackbar deleteNotice = Snackbar.make(getView(),"Please delete Pothole List First!", Snackbar.LENGTH_SHORT);
       deleteNotice.show();
     }
   }
-
+  /**
+   * An asynchronous task to perform network operations for downloading pothole data and updating bookmarks.
+   */
   private class NetworkTask extends AsyncTask<Void, Void, ArrayList<Pair<Pair<Double,Double>,String>>> {
     @Override
     protected ArrayList<Pair<Pair<Double,Double>,String>> doInBackground(Void... voids) {
+      // ArrayList to store results (pairs of coordinates and bookmark IDs)
       ArrayList<Pair<Pair<Double,Double>,String>> results = new ArrayList<>();
       OkHttpClient client = new OkHttpClient();
+      // Build a request to get all potholes from the server
       Request request = new Request.Builder()
               .url("https://busy-pink-tadpole-toga.cyclic.cloud/api/pothole/getAllPotholes")
               .build();
@@ -540,8 +596,10 @@ public class PlacePageController extends Fragment implements
         if (!res.isSuccessful()) {
           throw new IOException("Unexpected code " + res);
         }
-
+        // Parse the JSON response
         JSONArray arrRes = new JSONArray(res.body().string());
+
+        // Iterate through the potholes and extract coordinates and IDs
         for (int i = 0; i < arrRes.length(); i++) {
           JSONObject obj = arrRes.getJSONObject(i);
           double lat = obj.getDouble("Latitude");
@@ -551,29 +609,40 @@ public class PlacePageController extends Fragment implements
           results.add(new Pair<>(pair,id));
         }
       } catch (IOException | JSONException e) {
+        // Return null if an exception occurs during network operations
         return null;
       }
-
+      // Return the results to the onPostExecute method
       return results;
     }
 
     @Override
     protected void onPostExecute(ArrayList<Pair<Pair<Double,Double>,String>> results) {
+      // Check if the results are not null
       if (results != null) {
+        // Create the "Potholes" category if it doesn't exist
         BookmarkManager.INSTANCE.createCategory("Potholes");
+
+        // Display a Snackbar message indicating successful pothole list download
         Snackbar doneNotice = Snackbar.make(getView(),"Pothole List Downloaded!", Snackbar.LENGTH_SHORT);
+
+        // Iterate through the results and update bookmarks
         for (int i = 0; i < results.size(); i++) {
           Pair<Pair<Double,Double>,String> coords = results.get(i);
           System.out.println("Received Bookmark: " + coords.first.first + ","+ coords.first.second + " : " + coords.second);
+
+          // Add a new bookmark with coordinates
           Bookmark bookmark = BookmarkManager.INSTANCE.addNewBookmark(coords.first.first, coords.first.second);
+
+          // Update the pothole bookmark with the received ID
           BookmarkManager.INSTANCE.updatePotholeBookmark(bookmark.getBookmarkId(),coords.second);
         }
+
+        // Show the Snackbar message
         doneNotice.show();
-        // Success: Handle UI updates, e.g., show a toast or update the UI with the new data
       } else {
-          System.out.println("Error has occurred!");
-        // Error occurred during the network call, handle the error
-        // You can show an error message or log the error here
+        // Log an error message if an error occurred during network operations
+        System.out.println("Error has occurred!");
       }
     }
   }
